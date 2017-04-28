@@ -9,6 +9,23 @@ BPMS=jboss-bpmsuite-6.4.0.GA-deployable-eap7.x.zip
 EAP=jboss-eap-7.0.0-installer.jar
 VERSION=6.4
 
+DOCKER_HUB_ORG_NAME=jbossdemocentral
+BUILD_VERSION=1.0
+
+# Usage:
+#   ./init-docker.sh -dHubName=rhtgptetraining -bVersion=1.4
+
+
+for var in $@
+do
+    case "$var" in
+        -dHubName=*) DOCKER_HUB_ORG_NAME=`echo $var | cut -f2 -d\=` ;;
+        -bVersion=*) BUILD_VERSION=`echo $var | cut -f2 -d\=` ;;
+    esac
+done
+
+
+
 # wipe screen.
 clear
 
@@ -67,9 +84,13 @@ fi
 cp support/docker/Dockerfile .
 
 echo Starting Docker build.
+echo Docker build finished.
+echo DOCKER_HUB_ORG_NAME = $DOCKER_HUB_ORG_NAME
+echo BUILD_VERSION = $BUILD_VERSION
 echo
 
-docker build -t jbossdemocentral/bpms-kyc-demo .
+
+docker build --rm -t docker.io/$DOCKER_HUB_ORG_NAME/bpms-kyc-demo:$BUILD_VERSION .
 
 if [ $? -ne 0 ]; then
         echo
@@ -78,8 +99,6 @@ if [ $? -ne 0 ]; then
         exit
 fi
 
-echo Docker build finished.
-echo
 
 rm Dockerfile
 
@@ -88,7 +107,7 @@ echo "==========================================================================
 echo "=                                                                                     ="
 echo "=  You can now start the $PRODUCT in a Docker container with:            ="
 echo "=                                                                                     ="
-echo "=  docker run -it -p 8080:8080 -p 9990:9990 jbossdemocentral/bpms-kyc-demo  ="
+echo "=  docker run -it -p 8080:8080 -p 9990:9990 docker.io/$DOCKER_HUB_ORG_NAME/bpms-kyc-demo:$BUILD_VERSION   ="
 echo "=                                                                                     ="
 echo "=  Login into business central at:                                                    ="
 echo "=                                                                                     ="

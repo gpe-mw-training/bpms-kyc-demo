@@ -24,8 +24,8 @@ COPY support/installation-eap support/installation-eap.variables installs/$BPMS_
 
 # Update Permissions on Installers
 USER root
-RUN chown 1000:1000 /opt/jboss/$EAP_INSTALLER /opt/jboss/$BPMS_DEPLOYABLE
-USER 1000
+RUN chown jboss:jboss /opt/jboss/$EAP_INSTALLER /opt/jboss/$BPMS_DEPLOYABLE
+USER jboss
 
 # Prepare and run installer and cleanup installation components
 RUN sed -i "s:<installpath>.*</installpath>:<installpath>$BPMS_HOME</installpath>:" /opt/jboss/installation-eap \
@@ -36,28 +36,29 @@ RUN sed -i "s:<installpath>.*</installpath>:<installpath>$BPMS_HOME</installpath
 
 # Copy demo and support files
 COPY support/bpm-suite-demo-niogit $BPMS_HOME/bin/.niogit
-# Clone the BPM Suite Travel Agency repository.
+# Clone the BPM Suite kyc-demo repository.
 USER root
-RUN rm -rf $BPMS_HOME/bin/.niogit/specialtripsagency.git && git clone --bare https://github.com/jbossdemocentral/bpms-travel-agency-demo-repo.git $BPMS_HOME/bin/.niogit/specialtripsagency.git
-USER 1000
+RUN git clone --bare https://github.com/jbossdemocentral/bpms-kyc-demo-repo.git $BPMS_HOME/bin/.niogit/bpms-kyc-demo.git
+USER jboss
 
 # Create users and add support files
 RUN $BPMS_HOME/bin/add-user.sh -a -r ApplicationRealm -u bpmsAdmin -p bpmsuite1! -ro analyst,admin,user,manager,taskuser,reviewerrole,employeebookingrole,kie-server,rest-all --silent
-COPY support/standalone.xml $BPMS_HOME/standalone/configuration/
+COPY support/standalone.xml $BPMS_HOME/standalone/configuration
 COPY support/userinfo.properties $BPMS_HOME/standalone/deployments/business-central.war/WEB-INF/classes/
 
 # Swtich back to root user to perform build and cleanup
 USER root
 
-# Run Demo Maven build and cleanup
-RUN chown -R 1000:1000 $BPMS_HOME/bin/.niogit $BPMS_HOME/standalone/configuration/standalone.xml  $BPMS_HOME/standalone/deployments/business-central.war/WEB-INF/classes/userinfo.properties \
-&& rm -rf ~/.m2/repository
+# JA Bride:  Need entire $BPMS_HOME dir to be owned by jboss
+RUN chown -R jboss:jboss $BPMS_HOME \
+    && rm -rf /.m2/repository
 
-# Run as JBoss
-USER 1000
 
 # Expose Ports
 EXPOSE 9990 9999 8080
+
+# Run as JBoss
+USER jboss
 
 # Run BPMS
 CMD ["/opt/jboss/bpms/jboss-eap-7.0/bin/standalone.sh","-c","standalone.xml","-b", "0.0.0.0","-bmanagement","0.0.0.0"]
